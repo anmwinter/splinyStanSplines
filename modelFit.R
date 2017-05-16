@@ -32,7 +32,7 @@ stan.data <- list(n_points = num.points,
                   B        = B)
 
 # Fit model
-model <- stan_model('model/splineReg2.stan')
+model <- stan_model('model/splineReg.stan')
 fit   <- sampling(object = model, data = stan.data,
                   iter = 1000, chains = 3, cores = 2,
                   control = list(adapt_delta = 0.99))
