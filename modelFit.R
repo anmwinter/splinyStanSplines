@@ -18,20 +18,24 @@ ggplot(plot.frame, aes(x = Index, y = Y, group = Beta, color = Beta)) +
 dev.off()
 
 # Data for stan
-stan.data <- list(num_points = num.points,
-                  num_obs    = num.obs,
-                  num_var    = 4,
-                  num_knots  = 5,
-                  lambda     = c(1,1,1,1),
-                  knots      = seq(0, 1, length.out = 5),
-                  Y          = Y,
-                  X          = X,
-                  argvals    = idx)
+B <- construct.basis(idx, degree = 3, knots = NULL, n.knots = 5)
+stan.data <- list(n_points = num.points,
+                  n_obs    = num.obs,
+                  n_var    = 4,
+                  n_knots  = 5,
+                  n_basis  = dim(B)[1],
+                  lambda   = c(1,1,1,1),
+                  knots    = seq(0, 1, length.out = 5),
+                  Y        = Y,
+                  X        = X,
+                  argvals  = idx,
+                  B        = B)
 
 # Fit model
-model <- stan_model('model/splineReg.stan')
+model <- stan_model('model/splineReg2.stan')
 fit   <- sampling(object = model, data = stan.data,
-                  iter = 1000, chains = 3, cores = 2)
+                  iter = 1000, chains = 3, cores = 2,
+                  control = list(adapt_delta = 0.99))
 samples <- extract(fit)
 
 # Plot estimate
