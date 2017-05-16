@@ -5,13 +5,13 @@ source('R/constructBasis.R')
 source('R/splineHeatPlot.R')
 
 # Simulate data
-source('R/simData.R')
+source('R/simData2.R')
 
 # Plot true effects
-plot.frame <- data.frame(Beta  = as.factor(rep(1:4, each = num.points)),
-                         Index = rep(idx, 4),
+plot.frame <- data.frame(Beta  = as.factor(rep(1:2, each = num.points)),
+                         Index = rep(idx, 2),
                          Y     = as.numeric(t(B)))
-png(file = 'plots/trueFactors.png',
+png(file = 'plots/trueFactorsSplinePlot.png',
     width = 430, height = 340, res = 100)
 ggplot(plot.frame, aes(x = Index, y = Y, group = Beta, color = Beta)) +
     geom_line(size = 2) +
@@ -20,14 +20,14 @@ ggplot(plot.frame, aes(x = Index, y = Y, group = Beta, color = Beta)) +
 dev.off()
 
 # Data for stan
-B <- construct.basis(idx, degree = 3, knots = NULL, n.knots = 5)
+B <- construct.basis(idx, degree = 3, knots = NULL, n.knots = 10)
 stan.data <- list(n_points = num.points,
                   n_obs    = num.obs,
-                  n_var    = 4,
-                  n_knots  = 5,
+                  n_var    = 2,
+                  n_knots  = 10,
                   n_basis  = dim(B)[1],
-                  lambda   = c(1,1,1,1),
-                  knots    = seq(0, 1, length.out = 5),
+                  lambda   = c(1,1),
+                  knots    = seq(0, 1, length.out = 10),
                   Y        = Y,
                   X        = X,
                   argvals  = idx,
@@ -40,14 +40,9 @@ fit   <- sampling(object = model, data = stan.data,
                   control = list(adapt_delta = 0.99))
 samples <- extract(fit)
 
-# Plot estimate
-plot.frame <- data.frame(Estimate = as.factor(rep(1:4, each = num.points)),
-                         Index  = rep(idx, 4),
-                         Y      = as.numeric(t(colMeans(samples$Beta))))
-png(file = 'plots/estimatedFactors.png',
+# Plot effect estimate
+png(file = 'plots/heatmapSplinePlot.png',
     width = 430, height = 340, res = 100)
-ggplot(plot.frame, aes(x = Index, y = Y, group = Estimate, color = Estimate)) +
-    geom_line(size = 2) +
-    scale_colour_tableau() +
-    theme_minimal()
+spline.heat.plot(samples$a[,2,], B, idx, 
+                 xlab = 'Index', ylab = 'Effect')
 dev.off()
