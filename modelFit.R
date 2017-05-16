@@ -26,7 +26,7 @@ stan.data <- list(num_points = num.points,
                   knots      = seq(0, 1, length.out = 5),
                   Y          = Y,
                   X          = X,
-                  argals     = idx)
+                  argvals    = idx)
 
 # Fit model
 model <- stan_model('model/splineReg.stan')
