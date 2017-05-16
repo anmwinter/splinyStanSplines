@@ -29,30 +29,26 @@ functions {
 }
 
 data {
-    int num_points;                    // number of data points
-    int num_obs;                       // Number of observations
-    int num_var;                       // Number of predictors
-    int num_knots;                     // Number of knots
-    vector<lower=0>[num_var] lambda;   // Smoothness penalty
-    vector[num_knots]   knots;         // Sequence of knots
-    vector[num_points]  Y[num_obs];    // Data matrix
-    row_vector[num_var] X[num_obs];    // Design matrix
-    real argvals[num_points];          // Argument values
+    int num_points;             // number of data points
+    int num_obs;                // Number of observations
+    int num_var;                // Number of predictors
+    int num_knots;              // num of knots
+    real<lower=0> lambda;
+    vector[num_knots]  knots;   // the sequence of knots
+    vector[num_points] Y[num_obs];
+    row_vector[num_var]    X[num_obs];
+    real idx[num_points];
 }
 
 transformed data {
-    vector[num_var] lambda_inv;
     int num_basis = num_knots + 3 - 1; // total number of B-splines
     matrix[num_basis, num_points] B;     // matrix of B-splines
     vector[3 + num_knots] ext_knots_temp;
     vector[2*3 + num_knots] ext_knots; // set of extended knots
-    for (i in 1:num_var){
-        lambda_inv[i] = 1 / lambda[i];
-    }
     ext_knots_temp = append_row(rep_vector(knots[1], 3), knots);
     ext_knots      = append_row(ext_knots_temp, rep_vector(knots[num_knots], 3));
     for (ind in 1:num_basis){
-        B[ind,:] = to_row_vector(build_b_spline(argvals, to_array_1d(ext_knots), 
+        B[ind,:] = to_row_vector(build_b_spline(idx, to_array_1d(ext_knots), 
             ind, 3 + 1));
     }
     B[num_knots + 3 - 1, num_points] = 1; 
@@ -60,8 +56,9 @@ transformed data {
 
 parameters {
     row_vector[num_basis] a_raw[num_var]; 
+    //vector[num_var] a0;
     real<lower=0> sigma; 
-    vector<lower=0>[num_var] tau;   
+    real<lower=0> tau;   
 }
 
 transformed parameters {
@@ -69,21 +66,20 @@ transformed parameters {
     row_vector[num_basis] a[num_var];
     for (i in 1:num_var){
         a[i,1] = a_raw[i,1];
-        for (j in 2:num_basis){
-            a[i,j] = a[i,j-1] + a_raw[i,j]*tau[i];
+        for (j in 2:(num_basis-1)){
+            a[i,j] = a[i,j-1] - 2*tau*a[i,j] + a_raw[i,j+1];
         }
-        Beta[i] = to_row_vector(a[i]*B);
+        Beta[i] =  to_row_vector(a[i]*B); //to_row_vector(a0[i]*to_vector(idx) +;
     }
 }
 
 model {
-    
     // Priors
     for (i in 1:num_var){
         a_raw[i] ~ normal(0, 1);
     }
     //a0 ~ normal(0, 1);
-    tau ~ normal(0, lambda_inv);
+    tau ~ normal(0, 1/lambda);
     sigma ~ normal(0, 1);
   
     //Likelihood

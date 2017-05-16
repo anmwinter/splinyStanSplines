@@ -22,11 +22,11 @@ stan.data <- list(num_points = num.points,
                   num_obs    = num.obs,
                   num_var    = 4,
                   num_knots  = 5,
-                  lambda     = 1,
+                  lambda     = c(1,1,1,1),
                   knots      = seq(0, 1, length.out = 5),
                   Y          = Y,
                   X          = X,
-                  idx        = idx)
+                  argals     = idx)
 
 # Fit model
 model <- stan_model('model/splineReg.stan')
